@@ -5,21 +5,6 @@
 #include <stdio.h>
 #include <locale.h>
 
-class Shed {
-    Screen *m_screen;
-    File *m_file;
-    InputHandler inpHandler;
-
-    bool m_running; 
-
-public:
-    Shed(int argc, char **argv) noexcept;
-    ~Shed();
-
-    void run() noexcept;
-private:
-    void proccesEvents() noexcept;
-
-    void die(Error &ex) noexcept;
-    void panic(Error &ex) noexcept;
-};
+void run() noexcept;
+void init(int argc, char **argv) noexcept;
+void quit() noexcept;

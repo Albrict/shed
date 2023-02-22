@@ -2,35 +2,27 @@
 #include "headers/event.hpp"
 #include "headers/file.hpp"
 
-Shed::Shed(int argc, char **argv) noexcept
-{
-    m_running = true;
-    try {
-        m_screen = new Screen(); 
-        if (argc > 1) {
-            m_file = new File(argv[1]);
-            m_file->readFile();
-        } else {
-            endwin();
-            exit(0);
-        }
-    } catch (Error &ex) {
-        die(ex);
-    }
-    m_screen->displayFile(*m_file);
+static bool g_running = true;
+static Screen *g_screen;
+static File *g_file;
+static InputHandler g_inputHandler;
 
-    set_tabsize(4);
+static void die(Error &ex)
+{
+    endwin();
+    fprintf(stderr, "Error message: %s", &ex.getMsg());    
+    fprintf(stderr, "Error code: %d\n", ex.getCode());
+
+    exit_curses(ex.getCode());
 }
 
-Shed::~Shed()
-{
-    m_file->writeToFile(m_screen->getTFBuffer());
+//static void panic(Error &ex)
+//{
+//    fprintf(stderr, "Error message: %s", &ex.getMsg());    
+//    fprintf(stderr, "Error code: %d\n", ex.getCode());
+//}
 
-    delete m_screen;
-    delete m_file;
-}
-
-void Shed::proccesEvents() noexcept
+static void proccesEvents()
 {
     wint_t input;
     cchar_t output;
@@ -43,38 +35,51 @@ void Shed::proccesEvents() noexcept
         return;
     setcchar(&output, (wchar_t*)&input, 0, 0, nullptr);
 
-    inpHandler.proccesInput(m_screen->getTF(), &output); 
+    g_inputHandler.proccesInput(g_screen->getTF(), &output); 
 
     code = Event::getInstance()->getEvent();
     switch(code) {
     case EventCode::Code::Quit:
-        m_running = false;
+        g_running = false;
         break;
     case EventCode::Code::Save: 
-        m_file->writeToFile(m_screen->getTFBuffer()); 
+        g_file->writeToFile(g_screen->getTFBuffer()); 
         break;
     };
 }
 
-void Shed::run() noexcept
+void quit() noexcept
 {
-    while (m_running) {
+    g_file->writeToFile(g_screen->getTFBuffer());
+
+    delete g_screen;
+    delete g_file;
+}
+
+void run() noexcept
+{
+    while (g_running) {
         proccesEvents();
-        m_screen->update();
+        g_screen->update();
     }
 }
 
-void Shed::die(Error &ex) noexcept
+void init(int argc, char **argv) noexcept
 {
-    endwin();
-    fprintf(stderr, "Error message: %s", &ex.getMsg());    
-    fprintf(stderr, "Error code: %d\n", ex.getCode());
+    g_running = true;
+    try {
+        g_screen = new Screen(); 
+        if (argc > 1) {
+            g_file = new File(argv[1]);
+            g_file->readFile();
+        } else {
+            endwin();
+            exit(0);
+        }
+    } catch (Error &ex) {
+        die(ex);
+    }
+    g_screen->displayFile(*g_file);
 
-    exit_curses(ex.getCode());
-}
-
-void Shed::panic(Error &ex) noexcept
-{
-    fprintf(stderr, "Error message: %s", &ex.getMsg());    
-    fprintf(stderr, "Error code: %d\n", ex.getCode());
+    set_tabsize(4);
 }

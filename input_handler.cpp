@@ -21,125 +21,69 @@ void InputHandler::proccesInput(TextField &tf, cchar_t *input) noexcept
 void InputHandler::proccesInsert(TextField &tf, const cchar_t *input) noexcept
 {
     switch(*input->chars) {
-    case keys::key_esc:
-        m_currentMode = mode::edit;
-        break;
-    case CTRL_KEY('q'):
-        Event::getInstance()->setEvent(EventCode::Code::Quit);
-        break;
-    case CTRL_KEY('d'):
-        deleteRow(tf);
-        break;
-    case CTRL_KEY('s'):
-        Event::getInstance()->setEvent(EventCode::Code::Save);
-        break;
-    case CTRL_KEY('v'):
-        m_currentMode = mode::copy;
-        break;
-    case CTRL_KEY('p'):
-        paste(tf);
-        break;
-    case KEY_UP:
-        moveUp(tf);
-        break;
-    case KEY_DOWN:
-        moveDown(tf);
-        break;
-    case KEY_LEFT:
-        moveLeft(tf);
-        break;
-    case KEY_RIGHT:
-        moveRight(tf);
-        break;
-    case KEY_BACKSPACE:
-    case KEY_DL:
-    case 127:
-        deleteChar(tf);
-        break;
-    case '\n':
-        insertRow(tf);
-        break;
-    case '\t':
-        insertTab(tf);
-        break;
-    default:
-        insertChar(tf, input);
-        break;
+
+    // Keybinding           // Method
+    case keys::key_esc:     m_currentMode = mode::edit;     break;
+    case CTRL_KEY('q'):     Event::getInstance()->setEvent(EventCode::Code::Quit);      break;
+    case CTRL_KEY('d'):     deleteRow(tf);                  break;
+    case CTRL_KEY('s'):     Event::getInstance()->setEvent(EventCode::Code::Save);      break;
+    case CTRL_KEY('v'):     m_currentMode = mode::copy;     break;
+    case CTRL_KEY('p'):     paste(tf);                      break;
+
+    case KEY_UP:            moveUp(tf);                     break;
+    case KEY_DOWN:          moveDown(tf);                   break;
+    case KEY_LEFT:          moveLeft(tf);                   break;
+    case KEY_RIGHT:         moveRight(tf);                  break;
+
+    case KEY_BACKSPACE: 
+    case KEY_DL: 
+    case 127:               deleteChar(tf);                 break;
+
+    case '\n':              insertRow(tf);                  break;
+    case '\t':              insertTab(tf);                  break;
+    default:                insertChar(tf, input);          break;
+
     }
 }
 
 void InputHandler::proccesEdit(TextField &tf, const cchar_t *input) noexcept
 {
     switch(*input->chars) {
-    case CTRL_KEY('q'):
-        Event::getInstance()->setEvent(EventCode::Code::Quit);
-        break;
-    case CTRL_KEY('d'):
-        deleteRow(tf);
-        break;
-    case CTRL_KEY('s'):
-        Event::getInstance()->setEvent(EventCode::Code::Save);
-        break;
-    case CTRL_KEY('v'):
-        m_currentMode = mode::copy;
-        break;
-    case CTRL_KEY('p'):
-        paste(tf);
-        break;
-    case KEY_UP:
-        moveUp(tf);
-        break;
-    case KEY_DOWN:
-        moveDown(tf);
-        break;
-    case KEY_LEFT:
-        moveLeft(tf);
-        break;
-    case KEY_RIGHT:
-        moveRight(tf);
-        break;
-    case 'p':
-        paste(tf);
-        break;
-    case 'h':
-        moveLeft(tf);
-        break;
-    case 'j':
-        moveDown(tf);
-        break;
-    case 'k':
-        moveUp(tf);
-        break;
-    case 'l':
-        moveRight(tf);
-        break;
-    case 'w':
-        moveRightTill(tf);
-        break;
-    case 'b':
-        moveLeftTill(tf);
-        break;
-    case 'x':
-        mvwdelch(tf.win, tf.cursor_y, tf.cursor_x);
-        --tf.cursor_x;
-        --tf.cols;
-        break;
-    case 'a':
-        m_currentMode = mode::insert;
-        break;
-    case 'A':
-        tf.moveToEOL();
-        m_currentMode = mode::insert;
-        break;
-    case 'i':
-        ++tf.cursor_x;
-        wmove(tf.win, tf.cursor_y, tf.cursor_x);
-        m_currentMode = mode::insert;
-        break;
+
+    // Keybinding           // Method
+    case CTRL_KEY('q'):     Event::getInstance()->setEvent(EventCode::Code::Quit);      break;
+    case CTRL_KEY('d'):     deleteRow(tf);                  break;
+    case CTRL_KEY('s'):     Event::getInstance()->setEvent(EventCode::Code::Save);      break;
+    case CTRL_KEY('v'):     m_currentMode = mode::copy;     break;
+    case CTRL_KEY('p'):     paste(tf);                      break;
+
+    case KEY_UP:            moveUp(tf);                     break;
+    case KEY_DOWN:          moveDown(tf);                   break;
+    case KEY_LEFT:          moveLeft(tf);                   break;
+    case KEY_RIGHT:         moveRight(tf);                  break;
+
+    case 'p':               paste(tf);                      break;
+    case 'h':               moveLeft(tf);                   break;
+    case 'j':               moveDown(tf);                   break;
+    case 'k':               moveUp(tf);                     break;
+    case 'l':               moveRight(tf);                  break;
+    case 'w':               moveRightTill(tf);              break;
+    case 'b':               moveLeftTill(tf);               break;
+    case 'x':               deleteCharInEditMode(tf);       break;
+    case 'a':               m_currentMode = mode::insert;   break;
+    case 'A':               moveToEndAndInsert(tf);         break;
+    case 'i':               startInsert(tf);                break;
     default:
         return;
         break;
     }
+}
+
+void InputHandler::startInsert(TextField &tf)
+{
+    ++tf.cursor_x;
+    wmove(tf.win, tf.cursor_y, tf.cursor_x);
+    m_currentMode = mode::insert;
 }
 
 void InputHandler::proccesCopy(TextField &tf, const cchar_t *input) noexcept
@@ -231,6 +175,19 @@ void InputHandler::deleteChar(TextField &tf) noexcept
     mvwdelch(tf.win, tf.cursor_y, tf.cursor_x);
 }
 
+void InputHandler::moveToEndAndInsert(TextField &tf) noexcept
+{
+    tf.moveToEOL();
+    m_currentMode = mode::insert;
+}
+
+void InputHandler::deleteCharInEditMode(TextField &tf) noexcept
+{
+    mvwdelch(tf.win, tf.cursor_y, tf.cursor_x);
+    --tf.cursor_x;
+    --tf.cols;
+}
+
 void InputHandler::moveUp(TextField &tf) noexcept
 {
     if (tf.cursor_y == 0)
@@ -244,6 +201,7 @@ void InputHandler::moveUp(TextField &tf) noexcept
     else
         tf.moveToEOL();
 }
+
 void InputHandler::moveDown(TextField &tf) noexcept
 {
     if (tf.cursor_y == tf.rows)
@@ -322,8 +280,14 @@ void InputHandler::copyChar(TextField &tf, const uint32_t buf_pos) noexcept
 {
     cchar_t ch;
     mvwin_wch(tf.win, tf.cursor_y, tf.cursor_x, &ch);
+
     if (m_copyBuffer[buf_pos] == *ch.chars)
         return;
     else
         m_copyBuffer[buf_pos] = *ch.chars;  
+}
+
+void InputHandler::paste(TextField &tf) noexcept
+{
+    mvwins_wstr(tf.win, tf.cursor_y, tf.cursor_x, m_copyBuffer);
 }
